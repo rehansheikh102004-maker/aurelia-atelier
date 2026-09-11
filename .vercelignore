@@ -1,0 +1,5 @@
+raw_frames/
+.backup_original/
+public/video.mp4
+.next/
+node_modules/
