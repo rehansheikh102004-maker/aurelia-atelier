@@ -172,7 +172,7 @@ export function useFramePreloader({ totalFrames = 450, isMobile = false }: Prelo
       }
     };
 
-    // Safety timeout: if on slow network, unlock after 2.8s
+    // Safety timeout: if on slow network, unlock after 1.2s
     const safetyTimer = setTimeout(() => {
       if (isMountedRef.current && !completedTier1) {
         completedTier1 = true;
@@ -180,7 +180,7 @@ export function useFramePreloader({ totalFrames = 450, isMobile = false }: Prelo
         setIsReady(true);
         startTier2();
       }
-    }, 2800);
+    }, 1200);
 
     return () => {
       isMountedRef.current = false;

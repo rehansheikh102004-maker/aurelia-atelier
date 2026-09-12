@@ -12,12 +12,16 @@ export function Preloader({ progress, isReady }: PreloaderProps) {
   const [shouldRender, setShouldRender] = useState(true);
 
   useEffect(() => {
-    if (isReady && progress >= 100) {
+    if (isReady || progress >= 100) {
       const timer = setTimeout(() => {
         setShouldRender(false);
-      }, 400);
+      }, 300);
       return () => clearTimeout(timer);
     }
+    const safety = setTimeout(() => {
+      setShouldRender(false);
+    }, 1500);
+    return () => clearTimeout(safety);
   }, [isReady, progress]);
 
   return (
