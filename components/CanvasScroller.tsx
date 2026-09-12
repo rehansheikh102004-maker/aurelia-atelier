@@ -28,8 +28,6 @@ export default function CanvasScroller({ onActChange }: CanvasScrollerProps) {
 
   const targetFrameRef = useRef<number>(0);
   const currentFrameRef = useRef<number>(0);
-  const rafIdRef = useRef<number | null>(null);
-  const isAnimatingRef = useRef<boolean>(false);
   const currentActRef = useRef<number>(1);
   const lastDrawnIdxRef = useRef<number>(-1);
   const lastValidImage = useRef<HTMLImageElement | null>(null);
@@ -114,13 +112,9 @@ export default function CanvasScroller({ onActChange }: CanvasScrollerProps) {
     [imagesRef, totalFrames]
   );
 
-  const isAutoPlayingRef = useRef<boolean>(true);
-  const lastScrollTimeRef = useRef<number>(0);
-
   const onScrollUpdate = useCallback(
     (targetFrame: number) => {
       targetFrameRef.current = targetFrame;
-      lastScrollTimeRef.current = performance.now();
       prioritizeAround(Math.round(targetFrame));
     },
     [prioritizeAround]
@@ -228,40 +222,32 @@ export default function CanvasScroller({ onActChange }: CanvasScrollerProps) {
       onLeaveBack: () => gsap.to(container, { autoAlpha: 1, duration: 0.35 }),
     });
 
-    let lastTime = performance.now();
+    // Render initial frame on start
+    renderFrame(currentFrameRef.current, true);
+
+    // Smooth scroll-driven interpolation loop (STRICTLY SCROLL-CONTROLLED, ZERO AUTOPLAY)
     let animId: number;
 
-    const tick = (now: number) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
+    const tick = () => {
+      const target = targetFrameRef.current;
+      const current = currentFrameRef.current;
+      const diff = target - current;
 
-      const timeSinceScroll = now - lastScrollTimeRef.current;
-      const isActivelyScrolling = timeSinceScroll < 700;
+      if (Math.abs(diff) > 0.01) {
+        // Smooth 12% damping per 60fps tick — glides through all intermediate frames like a 60fps video
+        currentFrameRef.current += diff * 0.12;
+        const frameToDraw = Math.min(
+          Math.max(Math.round(currentFrameRef.current), 0),
+          totalFrames - 1
+        );
+        renderFrame(frameToDraw);
+        prioritizeAround(frameToDraw);
 
-      if (isActivelyScrolling) {
-        // Smooth lerp damping toward scroll target
-        const target = targetFrameRef.current;
-        const current = currentFrameRef.current;
-        const diff = target - current;
-        if (Math.abs(diff) > 0.05) {
-          currentFrameRef.current += diff * 0.14;
-        } else {
-          currentFrameRef.current = target;
+        // Live HUD frame indicator
+        const frameEl = document.getElementById("overlay-live-frame");
+        if (frameEl) {
+          frameEl.textContent = `FRAME: ${String(frameToDraw).padStart(3, "0")} / ${totalFrames}`;
         }
-      } else if (isAutoPlayingRef.current) {
-        // Continuous 30 FPS cinematic video playback
-        const step = 30 * dt;
-        currentFrameRef.current = (currentFrameRef.current + step) % totalFrames;
-      }
-
-      const frameToDraw = Math.min(Math.max(Math.round(currentFrameRef.current), 0), totalFrames - 1);
-      renderFrame(frameToDraw);
-      prioritizeAround(frameToDraw);
-
-      // Live HUD frame indicator
-      const frameEl = document.getElementById("overlay-live-frame");
-      if (frameEl) {
-        frameEl.textContent = `FRAME: ${String(frameToDraw).padStart(3, "0")} / ${totalFrames}`;
       }
 
       animId = requestAnimationFrame(tick);
