@@ -30,11 +30,11 @@ export default function AureliaMasterPage() {
 
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 0.85,
+      duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      wheelMultiplier: 1.15,
-      touchMultiplier: 1.6,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.4,
     });
 
     lenis.on("scroll", ScrollTrigger.update);
@@ -108,8 +108,8 @@ export default function AureliaMasterPage() {
         <span id="hud-progress-pct" className="text-[#E29B4A]">0%</span>
       </div>
 
-      {/* STAGE 1: SCRUBBED CANVAS TRACK (380vh - Fast, Responsive, Ultra-Smooth) */}
-      <section id="scrolly-canvas-track" className="relative h-[380vh] w-full">
+      {/* STAGE 1: SCRUBBED CANVAS TRACK (500vh - Video-Smooth Cinematic Pacing) */}
+      <section id="scrolly-canvas-track" className="relative h-[500vh] w-full">
         <CanvasScroller onActChange={setActiveAct} />
         <CanvasActOverlays activeAct={activeAct} lenis={lenisInstance} />
       </section>

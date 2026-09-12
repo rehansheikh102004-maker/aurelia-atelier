@@ -29,6 +29,7 @@ export default function CanvasScroller({ onActChange }: CanvasScrollerProps) {
   const targetFrameRef = useRef<number>(0);
   const currentFrameRef = useRef<number>(0);
   const rafIdRef = useRef<number | null>(null);
+  const isAnimatingRef = useRef<boolean>(false);
   const currentActRef = useRef<number>(1);
   const lastDrawnIdxRef = useRef<number>(-1);
   const lastValidImage = useRef<HTMLImageElement | null>(null);
@@ -113,21 +114,49 @@ export default function CanvasScroller({ onActChange }: CanvasScrollerProps) {
     [imagesRef, totalFrames]
   );
 
-  // Direct, zero-latency RAF synchronization with Lenis smooth scroll
+  // Silky, video-smooth RAF interpolation loop with cinematic momentum damping
+  const startAnimationLoop = useCallback(() => {
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
+
+    const tick = () => {
+      const target = targetFrameRef.current;
+      const current = currentFrameRef.current;
+      const diff = target - current;
+
+      if (Math.abs(diff) > 0.04) {
+        // Smooth 10% lerp per 60fps tick - glides through all intermediate frames like a 30-60fps video
+        currentFrameRef.current = current + diff * 0.10;
+        renderFrame(currentFrameRef.current);
+        prioritizeAround(Math.round(currentFrameRef.current));
+
+        // Sync live frame counter in telemetry overlay smoothly
+        const frameEl = document.getElementById("overlay-live-frame");
+        if (frameEl) {
+          const displayFrame = Math.min(Math.max(Math.round(currentFrameRef.current), 0), totalFrames - 1);
+          frameEl.textContent = `FRAME: ${String(displayFrame).padStart(3, "0")} / ${totalFrames}`;
+        }
+
+        rafIdRef.current = requestAnimationFrame(tick);
+      } else {
+        // Settled exactly at target frame
+        currentFrameRef.current = target;
+        renderFrame(target);
+        isAnimatingRef.current = false;
+        rafIdRef.current = null;
+      }
+    };
+
+    rafIdRef.current = requestAnimationFrame(tick);
+  }, [renderFrame, prioritizeAround, totalFrames]);
+
   const onScrollUpdate = useCallback(
     (targetFrame: number) => {
       targetFrameRef.current = targetFrame;
-      prioritizeAround(targetFrame);
-
-      if (rafIdRef.current === null) {
-        rafIdRef.current = requestAnimationFrame(() => {
-          renderFrame(targetFrameRef.current);
-          currentFrameRef.current = targetFrameRef.current;
-          rafIdRef.current = null;
-        });
-      }
+      prioritizeAround(Math.round(targetFrame));
+      startAnimationLoop();
     },
-    [prioritizeAround, renderFrame]
+    [prioritizeAround, startAnimationLoop]
   );
 
   useEffect(() => {
