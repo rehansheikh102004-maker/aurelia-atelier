@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ShieldCheck,
   Building2,
@@ -23,17 +23,25 @@ import {
 
 export function AtelierMonographDossier() {
   const [activeTab, setActiveTab] = useState<"purpose" | "workflow" | "faq">("purpose");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {
+        setIsPlaying(false);
+      });
+    }
+  }, []);
+
   const toggleVideo = () => {
     if (!videoRef.current) return;
-    if (isPlaying) {
+    if (videoRef.current.paused) {
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
       videoRef.current.pause();
       setIsPlaying(false);
-    } else {
-      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
     }
   };
 
@@ -183,11 +191,15 @@ export function AtelierMonographDossier() {
           <div className="relative rounded-2xl overflow-hidden aspect-16/9 bg-[#001224] border border-[#BDD8E9]/20 group">
             <video
               ref={videoRef}
-              src="/video.mp4"
+              src="/assets/explore.mp4"
+              autoPlay
               loop
               muted={isMuted}
               playsInline
-              className="w-full h-full object-cover"
+              preload="auto"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              className="w-full h-full object-cover cursor-pointer"
               onClick={toggleVideo}
             />
 

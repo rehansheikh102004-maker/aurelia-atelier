@@ -71,7 +71,7 @@ export default function HeroScrollVideoDemo() {
         <div className="relative w-full h-full group">
           <video
             ref={videoRef}
-            src="/video.mp4"
+            src="/assets/explore.mp4"
             autoPlay
             loop
             muted={isMuted}
